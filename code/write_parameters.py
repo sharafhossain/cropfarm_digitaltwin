@@ -1,4 +1,4 @@
-"""Write default parameters for student Project10 plant-growth GA assignment."""
+"""Write default parameters for the Project 8 plant-growth GA assignment."""
 
 from __future__ import annotations
 

@@ -119,7 +119,7 @@ In summary, the textbook objective matches the \emph{shape of the distribution} 
 % %-----------------------------%
 % % Place answer here
 % %-----------------------------%
-The GA was run with a population of 60, up to 200 generations, and early stopping after 30 generations without improvement. It converged in 187 generations.
+The GA was run using the default notebook parameters: population size 36, 55 generations, early stopping patience 12, and the default random seeds from \texttt{write\_parameters.py}. It ran for the full 55 generations.
 
 \begin{figure}[H]
     \centering
@@ -130,24 +130,24 @@ The GA was run with a population of 60, up to 200 generations, and early stoppin
 
 \begin{table}[H]
 \centering
-\caption{Parameter recovery results. Train MSE = 0.0004, Test MSE = 0.0007.}
+\caption{Parameter recovery results using the default notebook parameters. Train MSE = 0.0008, Test MSE = 0.0029.}
 \begin{tabular}{lrrr}
 \hline
 \textbf{Parameter} & \textbf{True value} & \textbf{Recovered} & \textbf{\% Error} \\
 \hline
-$G_0$      & 0.1000 & 0.1223 & 22.3\% \\
-$b_w$      & 0.5500 & 0.1000 & 81.8\% \\
-$b_f$      & 0.3500 & 0.2036 & 41.8\% \\
-$\gamma$   & 0.9000 & 1.2951 & 43.9\% \\
-$\alpha$   & 0.9500 & 0.9511 &  0.1\% \\
-$\lambda$  & 0.0800 & 0.0789 &  1.4\% \\
-$\rho$     & 1.1000 & 1.0893 &  1.0\% \\
+$G_0$      & 0.1000 & 0.0953 &  4.7\% \\
+$b_w$      & 0.5500 & 0.8137 & 47.9\% \\
+$b_f$      & 0.3500 & 0.6714 & 91.8\% \\
+$\gamma$   & 0.9000 & 1.2439 & 38.2\% \\
+$\alpha$   & 0.9500 & 0.9126 &  3.9\% \\
+$\lambda$  & 0.0800 & 0.0984 & 22.9\% \\
+$\rho$     & 1.1000 & 1.0862 &  1.3\% \\
 \hline
 \end{tabular}
 \label{tab:recovery}
 \end{table}
 
-Despite the poor pointwise recovery of $G_0$, $b_w$, $b_f$, and $\gamma$, the model generalizes well to the held-out test season: the test MSE (0.0007) is only slightly higher than the training MSE (0.0004), and both are very close to zero. The trajectory plot confirms that the GA-recovered model tracks the true growth dynamics accurately on an unseen season with independently generated forcing signals.
+Despite the poor pointwise recovery of several individual parameters, the model generalizes reasonably well to the held-out test season: the test MSE (0.0029) is higher than the training MSE (0.0008), but both remain small. The trajectory plot confirms that the GA-recovered model captures the dominant growth dynamics on an unseen season with independently generated forcing signals.
 \end{answer}
 \newpage
 \item[3. (b)] (10 points) Which parameters are recovered accurately? Which are harder to identify, and why? Does this have a big impact on the predictive capability of our model?
@@ -156,17 +156,17 @@ Despite the poor pointwise recovery of $G_0$, $b_w$, $b_f$, and $\gamma$, the mo
 % %-----------------------------%
 % % Place answer here
 % %-----------------------------%
-Three parameters are recovered with high accuracy: $\alpha$ (0.1\% error), $\lambda$ (1.4\%), and $\rho$ (1.0\%). Four parameters are recovered poorly: $b_w$ (81.8\%), $b_f$ (41.8\%), $\gamma$ (43.9\%), and $G_0$ (22.3\%).
+Three parameters are recovered relatively accurately: $G_0$ (4.7\% error), $\alpha$ (3.9\%), and $\rho$ (1.3\%). Three parameters are recovered poorly: $b_w$ (47.9\%), $b_f$ (91.8\%), and $\gamma$ (38.2\%). The competition strength $\lambda$ is also noticeably off, with a 22.9\% error, although its absolute error is small because the true value is only 0.08.
 
-The reason for the poor recovery of $G_0$, $b_w$, $b_f$, and $\gamma$ is \textbf{structural non-identifiability}. All four parameters appear exclusively inside the combined effective growth factor
+The reason for the poor recovery of $b_w$, $b_f$, and $\gamma$ is that these parameters are strongly coupled inside the combined effective growth factor
 \[
 G(t) = G_0 \bigl(1 + b_w W(t) + b_f F(t)\bigr) \, S(t)^{\gamma}.
 \]
-The trajectory $h(t)$ depends on this product as a whole, not on each factor individually. As a result, there exist infinitely many combinations of $\{G_0, b_w, b_f, \gamma\}$ that yield the same effective $G(t)$ and therefore the same predicted heights. The GA correctly finds a parameter set that minimizes the MSE, but it cannot distinguish between the many equally valid combinations of these four parameters. This is a fundamental property of the model structure, not a limitation of the GA.
+The trajectory $h(t)$ depends heavily on this product as a whole, so changes in one growth-input parameter can be partially compensated by changes in another. The GA correctly finds a parameter set that minimizes the MSE, but the data and forcing signals do not make every component of the growth multiplier equally easy to identify. This creates a flat or highly correlated region of the loss landscape, especially for the water, fertilizer, and sunlight-sensitivity parameters.
 
-By contrast, $\alpha$ appears as the exponent on plant height ($h^\alpha$), $\lambda$ scales the competition term independently of the growth term, and $\rho$ controls the spatial decay of inter-plant interactions. These parameters have structurally distinct effects on the dynamics that cannot be compensated by adjusting the others, making them uniquely identifiable from the trajectory data.
+By contrast, $\alpha$ appears as the exponent on plant height ($h^\alpha$), and $\rho$ controls the spatial decay of inter-plant interactions. These parameters have more distinct effects on the dynamics, which is why they are recovered more accurately in this run. The parameter $\lambda$ also has a distinct role as the competition strength, but in this default GA run it is less accurately recovered than $\alpha$ and $\rho$.
 
-Despite the large errors in $\{G_0, b_w, b_f, \gamma\}$, the impact on predictive capability is limited under similar forcing conditions. Since the recovered parameters produce an effective $G(t)$ that closely matches the true one, the model still predicts plant growth accurately, as confirmed by the near-zero test MSE (0.0007). However, if the forcing signals were to change dramatically beyond the range seen in training --- for example, a season with much higher water or fertilizer inputs --- the model could fail, because the individually incorrect $b_w$ and $b_f$ would produce the wrong sensitivity to those inputs even if their combined effect happened to match in the training regime.
+Despite the large errors in $b_w$, $b_f$, and $\gamma$, the impact on predictive capability is limited under similar forcing conditions. Since the recovered parameters produce an effective growth signal that is close enough to the true one, the model still predicts plant growth reasonably well, as confirmed by the small held-out test MSE (0.0029). However, if the forcing signals changed dramatically beyond the range seen in training --- for example, a season with much higher water or fertilizer inputs --- the model could fail, because the individually incorrect sensitivities could produce the wrong response even if their combined effect worked in the training regime.
 \end{answer}
 \newpage
 \item[3. (c)] (20 points) Generate new data by increasing the \texttt{noise\_sigma} parameter of \texttt{generate\_dataset} and report your parameter recovery table after running the GA on this new data. How does increasing the noise level of our model impact our ability to recover parameters accurately?
@@ -175,7 +175,7 @@ Despite the large errors in $\{G_0, b_w, b_f, \gamma\}$, the impact on predictiv
 % %-----------------------------%
 % % Place answer here
 % %-----------------------------%
-The dataset was regenerated with \texttt{noise\_sigma = 0.20} (increased from 0.03). The GA was run with identical hyperparameters and converged in 144 generations.
+The dataset was regenerated with \texttt{noise\_sigma = 0.20} (increased from 0.03). All other dataset and GA settings were kept at their default notebook values. The GA ran for the full 55 generations.
 
 \begin{figure}[H]
     \centering
@@ -191,24 +191,24 @@ The dataset was regenerated with \texttt{noise\_sigma = 0.20} (increased from 0.
 \hline
 \textbf{Parameter} & \textbf{True} & \textbf{Recovered ($\sigma$=0.03)} & \textbf{Recovered ($\sigma$=0.20)} & \textbf{\% Error ($\sigma$=0.20)} \\
 \hline
-$G_0$      & 0.1000 & 0.1223 & 0.0988 &  1.2\% \\
-$b_w$      & 0.5500 & 0.1000 & 0.7375 & 34.1\% \\
-$b_f$      & 0.3500 & 0.2036 & 0.5056 & 44.5\% \\
-$\gamma$   & 0.9000 & 1.2951 & 1.0838 & 20.4\% \\
-$\alpha$   & 0.9500 & 0.9511 & 0.9536 &  0.4\% \\
-$\lambda$  & 0.0800 & 0.0789 & 0.0761 &  4.9\% \\
-$\rho$     & 1.1000 & 1.0893 & 1.0788 &  1.9\% \\
+$G_0$      & 0.1000 & 0.0953 & 0.0985 &  1.5\% \\
+$b_w$      & 0.5500 & 0.8137 & 0.7156 & 30.1\% \\
+$b_f$      & 0.3500 & 0.6714 & 0.3829 &  9.4\% \\
+$\gamma$   & 0.9000 & 1.2439 & 1.2020 & 33.6\% \\
+$\alpha$   & 0.9500 & 0.9126 & 0.9220 &  2.9\% \\
+$\lambda$  & 0.0800 & 0.0984 & 0.0950 & 18.8\% \\
+$\rho$     & 1.1000 & 1.0862 & 1.0764 &  2.1\% \\
 \hline
-Train MSE & --- & 0.0004 & 0.0128 & --- \\
-Test MSE  & --- & 0.0007 & 0.0142 & --- \\
+Train MSE & --- & 0.0008 & 0.0123 & --- \\
+Test MSE  & --- & 0.0029 & 0.0136 & --- \\
 \hline
 \end{tabular}
 \label{tab:recovery_noise}
 \end{table}
 
-Increasing the noise level has two main effects. First, the MSE values rise substantially (train MSE: $0.0004 \to 0.0128$; test MSE: $0.0007 \to 0.0142$), since the noisy observations provide a less informative training signal and the GA is fitting a noisier target. Second, individual parameter recovery becomes less consistent. The structurally identifiable parameters $\alpha$, $\lambda$, and $\rho$ remain well recovered under high noise (errors below 5\%), because their roles in the ODE are geometrically distinct. However, the non-identifiable group $\{G_0, b_w, b_f, \gamma\}$ shifts to a different equally valid combination under high noise: for example, $b_w$ moves from 0.10 to 0.74 across the two runs, reflecting the fact that the GA converges to a different point in the flat region of the loss landscape.
+Increasing the noise level has two main effects. First, the MSE values rise substantially (train MSE: $0.0008 \to 0.0123$; test MSE: $0.0029 \to 0.0136$), since the noisy observations provide a less informative training signal and the GA is fitting a noisier target. Second, individual parameter recovery becomes less consistent. The parameters $\alpha$ and $\rho$ remain well recovered under high noise, while $\lambda$ is still noticeably biased. The growth-input parameters also shift to a different combination: for example, $b_w$ moves from 0.8137 in the low-noise run to 0.7156 in the high-noise run. This reflects the fact that the GA can converge to different points in a correlated region of the loss landscape.
 
-Crucially, the generalization gap remains small under high noise (test MSE $-$ train MSE $= 0.0014$), indicating that the model still captures the dominant growth dynamics rather than overfitting to noise. However, the absolute MSE values are much higher than in the low-noise case, meaning predictions are less accurate. This demonstrates that noise degrades the quality of the recovered model even when it does not cause overfitting.
+Crucially, the generalization gap remains small under high noise (test MSE $-$ train MSE $= 0.0013$), indicating that the model still captures the dominant growth dynamics rather than simply memorizing the noise. However, the absolute MSE values are much higher than in the low-noise case, meaning predictions are less accurate. This demonstrates that noise degrades the quality of the recovered model even when it does not create a large train-test gap.
 \end{answer}
 
 \end{enumerate}
